@@ -41,3 +41,14 @@ Verify if the pod is up:
 ```
 kubectl get pods -n backup |grep velero
 ```
+
+Once Velero pod is up, execute the below commands to create a backup, login to s3 and check if the backup has been created after the below command executes: -
+
+```
+velero backup create whole-cluster-backup -n backup
+```
+Once backup is ready, delete some deployment or a namespace and the restore using the below command. 
+
+```
+velero restore create --from-backup whole-cluster-backup -n backup
+```
