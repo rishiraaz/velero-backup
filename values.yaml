@@ -1,0 +1,112 @@
+# Velero ConfigMaps.
+# Eg:
+# configMaps:
+#   restic-restore-action-config:
+#     labels:
+#       velero.io/plugin-config: ""
+#       velero.io/restic: RestoreItemAction
+#     data:
+#       image: gcr.io/heptio-images/velero-restic-restore-help
+configMaps: {}
+
+configuration:
+  backupStorageLocation:
+    name: aws
+    bucket: velero-bucket
+    prefix: velero-backup
+    config:
+      s3Url: https://s3-us-east-1.amazonaws.com/
+      region: us-east-1
+  provider: aws
+  volumeSnapshotLocation:
+    config:
+      region: us-east-1
+    name: aws
+credentials:
+  # Whether a secret should be used as the source of IAM account
+  # credentials. Set to false if, for example, using kube2iam or
+  # kiam to provide IAM credentials for the Velero pod.
+  useSecret: false
+  # Name of a pre-existing secret (if any) in the Velero namespace
+  # that should be used to get IAM account credentials. Optional.
+  existingSecret:
+  # Data to be stored in the Velero secret, if `useSecret` is
+  # true and `existingSecret` is empty. This should be the contents
+  # of your IAM credentials file.
+  secretContents: {}
+deployRestic: false
+extraVolumeMounts: []
+extraVolumes: []
+##
+## Configuration settings that directly affect the Velero deployment YAML.
+##
+image:
+  pullPolicy: IfNotPresent
+  repository: velero/velero
+  tag: v1.2.0
+
+# Init containers to add to the Velero deployment's pod spec. At least one plugin provider image is required.
+initContainers:
+  - name: velero-plugin-for-aws
+    image: velero/velero-plugin-for-aws:v1.0.0
+    imagePullPolicy: IfNotPresent
+    volumeMounts:
+      - mountPath: /target
+        name: plugins
+
+metrics:
+  enabled: true
+  podAnnotations:
+    prometheus.io/path: /metrics
+    prometheus.io/port: "8085"
+    prometheus.io/scrape: "true"
+  scrapeInterval: 30s
+  serviceMonitor:
+    additionalLabels: {}
+    enabled: false
+nodeSelector: {}
+# Annotations to add to the Velero deployment's pod template. Optional.
+#
+# If using kube2iam or kiam, use the following annotation with your AWS_ACCOUNT_ID
+# and VELERO_ROLE_NAME filled in:
+#  iam.amazonaws.com/role: arn:aws:iam::<AWS_ACCOUNT_ID>:role/<VELERO_ROLE_NAME>
+
+podAnnotations:
+    iam.amazonaws.com/role: "arn:aws:iam::<AWS_ACCOUNT_ID>:role/<VELERO_ROLE_NAME>"
+
+rbac:
+  clusterAdministrator: true
+  create: true
+resources: {}
+restic:
+  extraVolumeMounts: []
+  extraVolumes: []
+  podVolumePath: /var/lib/kubelet/pods
+  priorityClassName: {}
+  privileged: false
+  resources: {}
+  tolerations: []
+
+# Backup schedules to create.
+# Eg:
+# schedules:
+#   mybackup:
+#     schedule: "0 0 * * *"
+#     template:
+#       ttl: "240h"
+#       includedNamespaces:
+#        - foo
+schedules: {}
+
+serviceAccount:
+  server:
+    annotations: null
+    create: true
+    name: null
+snapshotsEnabled: true
+tolerations: []
+
+
+##
+## End of additional Velero resource settings.
+##
